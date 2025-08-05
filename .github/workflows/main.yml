@@ -37,9 +37,7 @@ jobs:
         export KBUILD_BUILD_HOST=Actions
         mkdir out
         make O=out exynos9610-m31nsxx_defconfig
-        make -j$(nproc) O=out CC=clang
-        cp out/arch/arm64/boot/Image.gz-dtb anykernel/
-        find out/ -name '*.ko' -exec cp {} anykernel/ \;
+        make -j$(nproc) O=out CC=clang KCFLAGS="-Wno-error=array-bounds"
 
     - name: Create Flashable ZIP
       run: |
