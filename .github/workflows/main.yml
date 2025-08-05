@@ -1,0 +1,53 @@
+name: Build Kernel for Samsung Galaxy M31 (SM-M315F)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Kernel Source
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y bc bison build-essential curl flex git libssl-dev \
+        libelf-dev lzop unzip zip clang lld python-is-python2
+
+    - name: Clone AnyKernel3
+      run: git clone https://github.com/osm0sis/AnyKernel3.git anykernel
+
+    - name: Modify Defconfig
+      run: |
+        DEFCONFIG=arch/arm64/configs/exynos9610-m31nsxx_defconfig
+        echo 'CONFIG_USB_SUPPORT=y' >> $DEFCONFIG
+        echo 'CONFIG_USB_HID=y' >> $DEFCONFIG
+        echo 'CONFIG_HID=y' >> $DEFCONFIG
+        echo 'CONFIG_MAC80211_MONITOR=y' >> $DEFCONFIG
+        echo 'CONFIG_MODULES=y' >> $DEFCONFIG
+
+    - name: Build Kernel
+      run: |
+        export ARCH=arm64
+        export SUBARCH=arm64
+        export KBUILD_BUILD_USER=GitHub
+        export KBUILD_BUILD_HOST=Actions
+        mkdir out
+        make O=out exynos9610-m31nsxx_defconfig
+        make -j$(nproc) O=out CC=clang
+        cp out/arch/arm64/boot/Image.gz-dtb anykernel/
+        find out/ -name '*.ko' -exec cp {} anykernel/ \;
+
+    - name: Create Flashable ZIP
+      run: |
+        cd anykernel
+        zip -r9 ../M31_CustomKernel.zip * -x '*.git*'
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: M31_CustomKernel
+        path: M31_CustomKernel.zip
