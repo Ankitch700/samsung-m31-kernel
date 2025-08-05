@@ -15,7 +15,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y bc bison build-essential curl flex git libssl-dev \
-        libelf-dev lzop unzip zip clang lld python-is-python2
+        libelf-dev lzop unzip zip clang lld
 
     - name: Clone AnyKernel3
       run: git clone https://github.com/osm0sis/AnyKernel3.git anykernel
