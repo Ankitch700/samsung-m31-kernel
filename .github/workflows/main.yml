@@ -1,51 +1,29 @@
-name: Build Kernel for Samsung Galaxy M31 (SM-M315F)
-
+name: Android kernel build test
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - master
 
 jobs:
-  build:
+  TestBuild:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Kernel Source
-      uses: actions/checkout@v4
-
-    - name: Install Dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y bc bison build-essential curl flex git libssl-dev \
-        libelf-dev lzop unzip zip clang lld
-
-    - name: Clone AnyKernel3
-      run: git clone https://github.com/osm0sis/AnyKernel3.git anykernel
-
-    - name: Modify Defconfig
-      run: |
-        DEFCONFIG=arch/arm64/configs/exynos9610-m31nsxx_defconfig
-        echo 'CONFIG_USB_SUPPORT=y' >> $DEFCONFIG
-        echo 'CONFIG_USB_HID=y' >> $DEFCONFIG
-        echo 'CONFIG_HID=y' >> $DEFCONFIG
-        echo 'CONFIG_MAC80211_MONITOR=y' >> $DEFCONFIG
-        echo 'CONFIG_MODULES=y' >> $DEFCONFIG
-
-    - name: Build Kernel
-      run: |
-        export ARCH=arm64
-        export SUBARCH=arm64
-        export KBUILD_BUILD_USER=GitHub
-        export KBUILD_BUILD_HOST=Actions
-        mkdir out
-        make O=out exynos9610-m31nsxx_defconfig
-        make -j$(nproc) O=out CC=clang KCFLAGS="-Wno-error=array-bounds"
-
-    - name: Create Flashable ZIP
-      run: |
-        cd anykernel
-        zip -r9 ../M31_CustomKernel.zip * -x '*.git*'
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: M31_CustomKernel
-        path: M31_CustomKernel.zip
+      - name: ↗️ Checkout
+        uses: actions/checkout@v2
+      - name: ⚙️ setup dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential binutils-aarch64-linux-gnu ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick libncurses5 lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev libwxgtk3.0-gtk3-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc yasm zip zlib1g-dev
+      - name: 🔨 Setup toolchain
+        run: |
+          mkdir -p ~/toolchain
+          bash resolv_toolchain_linux.sh
+      - name: 🏗️ Build Kernel
+        run: |
+          ./cleanup
+          sudo bash build.sh
+      - name: 📦 Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: kernel
+          path: SM-M315f_kernel.zip
